@@ -13,8 +13,8 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ParcelasDTO {
-    private Long numero;
+public class ParcelaDTO {
+    private int numero;
     private BigDecimal valorAmortizacao;
     private BigDecimal valorJuros;
     private BigDecimal valorPrestacao;

@@ -18,5 +18,5 @@ public class ResponseDTO {
     private Long codigoProduto;
     private String descricaoProduto;
     private BigDecimal taxaJuros;
-    private List<ResutaldoSimulacaoDTO> resultadoSimulacao;
+    private List<ResultadoSimulacaoDTO> resultadoSimulacao;
 }

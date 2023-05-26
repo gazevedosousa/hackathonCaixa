@@ -16,5 +16,5 @@ import java.math.BigDecimal;
 public class RequestDTO {
 
     private BigDecimal valorDesejado;
-    private Long prazo;
+    private int prazo;
 }

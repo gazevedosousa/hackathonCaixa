@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResutaldoSimulacaoDTO {
+public class ResultadoSimulacaoDTO {
     private String tipo;
-    private List<ParcelasDTO> parcelas;
+    private List<ParcelaDTO> parcelas;
 }
