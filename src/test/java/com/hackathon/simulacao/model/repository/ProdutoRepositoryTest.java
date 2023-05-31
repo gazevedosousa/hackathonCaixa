@@ -21,15 +21,17 @@ public class ProdutoRepositoryTest {
 
     @Test
     public void buscaProdutoPorValor() {
-        Produto produto = criaProduto();
+        Produto produto1 = criaProduto1();
+        Produto produto2 = criaProduto2();
 
-        List<Produto> produtoList =  produtoRepository.findByVrMinimoLessThanEqualOrderByVrMinimoDesc(BigDecimal.valueOf(1000));
+        List<Produto> produtoList =  produtoRepository.findByVrMinimoLessThanEqualOrderByVrMinimoDesc(BigDecimal.valueOf(50000));
 
-        Assertions.assertEquals(1, produtoList.size());
-        Assertions.assertEquals(produto.getName(), produtoList.get(0).getName());
+        Assertions.assertEquals(2, produtoList.size());
+        Assertions.assertEquals(produto2.getName(), produtoList.get(0).getName());
+        Assertions.assertEquals(produto1.getName(), produtoList.get(1).getName());
     }
 
-    private Produto criaProduto(){
+    private Produto criaProduto1(){
         return Produto.builder()
                 .id(1L)
                 .name("Produto 1")
@@ -38,6 +40,18 @@ public class ProdutoRepositoryTest {
                 .maxMeses(24L)
                 .vrMinimo(BigDecimal.valueOf(200.00))
                 .vrMaximo(BigDecimal.valueOf(10000.00))
+                .build();
+    }
+
+    private Produto criaProduto2(){
+        return Produto.builder()
+                .id(2L)
+                .name("Produto 2")
+                .txJuros(BigDecimal.valueOf(0.017500000))
+                .minMeses(25L)
+                .maxMeses(48L)
+                .vrMinimo(BigDecimal.valueOf(10001.00))
+                .vrMaximo(BigDecimal.valueOf(100000.00))
                 .build();
     }
 }
