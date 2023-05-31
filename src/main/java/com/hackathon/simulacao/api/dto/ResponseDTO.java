@@ -1,4 +1,4 @@
-package com.hackaton.simulacao.api.dto;
+package com.hackathon.simulacao.api.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

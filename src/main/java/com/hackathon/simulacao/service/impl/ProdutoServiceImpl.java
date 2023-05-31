@@ -1,18 +1,18 @@
-package com.hackaton.simulacao.service.impl;
+package com.hackathon.simulacao.service.impl;
 
-import com.hackaton.simulacao.api.dto.ParcelaDTO;
-import com.hackaton.simulacao.api.dto.ResponseDTO;
-import com.hackaton.simulacao.api.dto.ResultadoSimulacaoDTO;
-import com.hackaton.simulacao.exceptions.RegraNegocioException;
-import com.hackaton.simulacao.model.entity.Produto;
-import com.hackaton.simulacao.model.repository.ProdutoRepository;
-import com.hackaton.simulacao.service.ProdutoService;
+import com.hackathon.simulacao.exceptions.NotFoundException;
+import com.hackathon.simulacao.service.ProdutoService;
+import com.hackathon.simulacao.api.dto.ParcelaDTO;
+import com.hackathon.simulacao.api.dto.ResponseDTO;
+import com.hackathon.simulacao.api.dto.ResultadoSimulacaoDTO;
+import com.hackathon.simulacao.exceptions.RegraNegocioException;
+import com.hackathon.simulacao.model.entity.Produto;
+import com.hackathon.simulacao.model.repository.ProdutoRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.azure.messaging.eventhubs.*;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,22 +22,28 @@ import java.util.List;
 public class ProdutoServiceImpl implements ProdutoService {
 
     private final ProdutoRepository repository;
+    private static final String connectionString = "Endpoint=sb://eventhack.servicebus.windows.net/;SharedAccessKeyName=hack;SharedAccessKey=HeHeVaVqyVkntO2FnjQcs2Ilh/4MUDo4y+AEhKp8z+g=;EntityPath=simulacoes";
+    private static final String eventHubName = "simulacoes";
 
     @Override
-    public ResponseDTO buscarProdutoPorValor(BigDecimal valorDesejado, int prazo) throws RegraNegocioException {
-        List<Produto> produtosList = repository.buscaProdutoPorValor((valorDesejado));
+    public ResponseDTO buscarProdutoPorValor(BigDecimal valorDesejado, int prazo) throws RegraNegocioException, NotFoundException {
+        List<Produto> produtosList = repository.findByVrMinimoLessThanEqualOrderByVrMinimoDesc(valorDesejado);
 
         if(produtosList.isEmpty()){
-            throw new RegraNegocioException("Valor desejado inferior ao mínimo de R$200,00");
+            throw new NotFoundException("Produto não encontrado para o valor desejado");
         }
 
         Produto produto =  produtosList.get(0);
 
-        if(prazo < produto.getNU_MINIMO_MESES()){
-            throw new RegraNegocioException("Prazo menor que o mínimo necessário para a faixa de valor solicitado");
+        if(prazo < produto.getMinMeses() || prazo == 0){
+            throw new RegraNegocioException("Prazo solicitado não compatível com o valor desejado.");
         }
 
-        BigDecimal taxaJuros = produto.getPC_TAXA_JUROS();
+        if(produto.getMaxMeses() != null && prazo > produto.getMaxMeses()){
+            throw new RegraNegocioException("Prazo solicitado não compatível com o valor desejado.");
+        }
+
+        BigDecimal taxaJuros = produto.getTxJuros();
 
         ResultadoSimulacaoDTO calculoPrice = calculaPrice(taxaJuros, prazo, valorDesejado);
         ResultadoSimulacaoDTO calculoSAC = calculaSAC(taxaJuros, prazo, valorDesejado);
@@ -47,12 +53,16 @@ public class ProdutoServiceImpl implements ProdutoService {
         resultadoSimulacaoDTOList.add(calculoSAC);
         resultadoSimulacaoDTOList.add(calculoPrice);
 
-        return ResponseDTO.builder()
-                .codigoProduto(produto.getCO_PRODUTO())
-                .descricaoProduto(produto.getNO_PRODUTO())
+        ResponseDTO response = ResponseDTO.builder()
+                .codigoProduto(produto.getId())
+                .descricaoProduto(produto.getName())
                 .taxaJuros(taxaJuros.setScale(4, RoundingMode.HALF_UP))
                 .resultadoSimulacao(resultadoSimulacaoDTOList)
                 .build();
+
+        enviaEventHub(response);
+
+        return response;
 
     }
 
@@ -118,5 +128,18 @@ public class ProdutoServiceImpl implements ProdutoService {
                 .tipo("SAC")
                 .parcelas(parcelaDTOList)
                 .build();
+    }
+
+    @Override
+    public void enviaEventHub(ResponseDTO jsonSimulacao) {
+        EventHubProducerClient producer = new EventHubClientBuilder()
+                .connectionString(connectionString, eventHubName)
+                .buildProducerClient();
+
+        EventDataBatch eventDataBatch = producer.createBatch();
+
+        eventDataBatch.tryAdd(new EventData(String.valueOf(jsonSimulacao)));
+
+        producer.send(eventDataBatch);
     }
 }

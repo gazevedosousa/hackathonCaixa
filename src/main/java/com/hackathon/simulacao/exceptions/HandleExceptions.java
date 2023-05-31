@@ -1,4 +1,4 @@
-package com.hackaton.simulacao.exceptions;
+package com.hackathon.simulacao.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +11,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class HandleExceptions extends ResponseEntityExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<?> handleException(NotFoundException e, WebRequest request){
-
         return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
     }
 
